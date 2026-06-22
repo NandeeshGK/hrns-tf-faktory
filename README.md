@@ -46,3 +46,5 @@ they should server as starting points for your organization's governance require
 this file creates a project to be used for testing of infrastructure modules. it comes with pipelines that leverage the stage templates to test modules with both terratest and integration tests by spinning up all `examples` in the modules directory.
 
 there is then a tf-module created to register a new module in harness along with the testing settings to run all changes through pipelines.
+
+<img width="1894" height="1203" alt="image" src="https://github.com/user-attachments/assets/7b1064af-52d2-4716-9d84-ea6a7a1ed4b1" />
