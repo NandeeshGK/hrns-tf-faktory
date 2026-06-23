@@ -2,6 +2,8 @@
 
 this repo contains terraform code for the harness tf faktory project, which outlines everything needed to provide a baseline for running terraform, providing modules, and governance when using the harness platform.
 
+<img width="3821" height="2578" alt="image" src="https://github.com/user-attachments/assets/246dc13e-196d-41db-b46c-5c7fd3d9c762" />
+
 ## stage_templates
 
 this file contains account level stage templates for the common infrasture usage patterns:
@@ -28,6 +30,8 @@ plugin_image = "acmecorp/harness_terraform"
 plugin_connector = "account.docker_registry"
 ```
 
+<img width="3809" height="1398" alt="image" src="https://github.com/user-attachments/assets/0ff599ab-9d50-406e-be77-263e57820279" />
+
 ## policies
 
 this file contains account level policies for the common infrastructure usage patterns:
@@ -47,7 +51,8 @@ this file creates a project to be used for testing of infrastructure modules. it
 
 there is then a tf-module created to register a new module in harness along with the testing settings to run all changes through pipelines.
 
+<img width="1894" height="1203" alt="image" src="https://github.com/user-attachments/assets/7b1064af-52d2-4716-9d84-ea6a7a1ed4b1" />
+
 ## repo template
 
 the `repo` directory contains a cookiecutter template for creating new repos with the standard structure.
-
