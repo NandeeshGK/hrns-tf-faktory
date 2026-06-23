@@ -46,3 +46,8 @@ they should server as starting points for your organization's governance require
 this file creates a project to be used for testing of infrastructure modules. it comes with pipelines that leverage the stage templates to test modules with both terratest and integration tests by spinning up all `examples` in the modules directory.
 
 there is then a tf-module created to register a new module in harness along with the testing settings to run all changes through pipelines.
+
+## repo template
+
+the `repo` directory contains a cookiecutter template for creating new repos with the standard structure.
+
