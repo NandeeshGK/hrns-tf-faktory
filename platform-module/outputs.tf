@@ -1,3 +1,13 @@
+output "project_id" {
+  description = "Harness project resource ID"
+  value       = local.project_id
+}
+
+output "project_identifier" {
+  description = "Harness project identifier"
+  value       = var.project_id
+}
+
 output "cloud_connector_id" {
   description = "Cloud connector resource ID"
   value       = var.create_cloud_connector ? harness_platform_connector_aws.cloud[0].id : null
@@ -43,18 +53,19 @@ output "infrastructure_identifiers" {
   value       = { for k, infra in harness_platform_infrastructure.platform : k => infra.identifier }
 }
 
-output "service_override_ids" {
-  description = "Service override resource IDs keyed by environment identifier"
-  value       = { for k, override in harness_platform_service_overrides_v2.platform : k => override.id }
+output "infra_override_ids" {
+  description = "INFRA_GLOBAL_OVERRIDE IDs keyed by environment identifier"
+  value       = { for k, override in harness_platform_service_overrides_v2.infra : k => override.id }
 }
 
 output "ids" {
   description = "All created resource IDs in one map"
   value = {
+    project_id         = local.project_id
     cloud_connector_id = var.create_cloud_connector ? harness_platform_connector_aws.cloud[0].id : null
     service_id         = var.create_cd_stack ? harness_platform_service.platform[0].id : null
     environments       = { for k, env in harness_platform_environment.platform : k => env.id }
     infrastructures    = { for k, infra in harness_platform_infrastructure.platform : k => infra.id }
-    service_overrides  = { for k, o in harness_platform_service_overrides_v2.platform : k => o.id }
+    infra_overrides = { for k, o in harness_platform_service_overrides_v2.infra : k => o.id }
   }
 }

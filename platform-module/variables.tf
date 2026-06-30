@@ -8,8 +8,20 @@ variable "org_id" {
 }
 
 variable "project_id" {
-  description = "Harness project identifier"
+  description = "Harness project identifier (created when create_project is true, otherwise must already exist)"
   type        = string
+}
+
+variable "project_name" {
+  description = "Harness project display name when create_project is true. Defaults to project_id."
+  type        = string
+  default     = null
+}
+
+variable "create_project" {
+  description = "Create a new Harness project. When false, project_id must reference an existing project."
+  type        = bool
+  default     = false
 }
 
 variable "tags" {
@@ -42,8 +54,8 @@ variable "create_cd_stack" {
   default     = true
 }
 
-variable "create_service_overrides" {
-  description = "Create per-environment infrastructure service overrides"
+variable "create_infra_overrides" {
+  description = "Create INFRA_GLOBAL_OVERRIDE per environment/infrastructure (Infrastructure Specific tab in Harness UI)."
   type        = bool
   default     = true
 }
@@ -157,20 +169,8 @@ variable "service_definition_manifest_path" {
   default     = "/platform/service-definition.json"
 }
 
-variable "default_cpu" {
-  description = "Default task CPU units for service and overrides"
-  type        = string
-  default     = "256"
-}
-
-variable "default_memory" {
-  description = "Default task memory (MiB) for service and overrides"
-  type        = string
-  default     = "512"
-}
-
 variable "cloud_connector_ref" {
-  description = "Existing cloud connector reference for infrastructure. Required when create_cloud_connector is false."
+  description = "Existing cloud connector reference for infrastructure when create_cloud_connector is false. Use connector identifier for project-scoped connectors."
   type        = string
   default     = null
 }
@@ -183,18 +183,6 @@ variable "default_cluster" {
 
 variable "cluster_overrides" {
   description = "Per-environment cluster overrides (keyed by environment identifier)"
-  type        = map(string)
-  default     = {}
-}
-
-variable "cpu_overrides" {
-  description = "Per-environment CPU overrides (keyed by environment identifier)"
-  type        = map(string)
-  default     = {}
-}
-
-variable "memory_overrides" {
-  description = "Per-environment memory overrides (keyed by environment identifier)"
   type        = map(string)
   default     = {}
 }
@@ -217,8 +205,6 @@ variable "environments" {
     name                      = string
     type                      = string
     cluster                   = optional(string)
-    cpu                       = optional(string)
-    memory                    = optional(string)
     infrastructure_identifier = optional(string)
     infrastructure_name       = optional(string)
   }))

@@ -2,26 +2,42 @@
 # Platform CD bootstrap
 #
 # Optionally provisions:
+#   - Harness project (optional)
 #   - Cloud connector (AWS OIDC)
-#   - CD service, environments, infrastructure definitions, service overrides
+#   - CD service, environments, infrastructure definitions, infra overrides (INFRA_GLOBAL_OVERRIDE)
 # ---------------------------------------------------------------------------
 
 data "harness_platform_organization" "org" {
   identifier = var.org_id
 }
 
+resource "harness_platform_project" "platform" {
+  count = var.create_project ? 1 : 0
+
+  identifier = var.project_id
+  name       = coalesce(var.project_name, var.project_id)
+  org_id     = data.harness_platform_organization.org.id
+}
+
+data "harness_platform_project" "platform" {
+  count = var.create_project ? 0 : 1
+
+  identifier = var.project_id
+  org_id     = data.harness_platform_organization.org.id
+}
+
 locals {
   org_id     = data.harness_platform_organization.org.id
-  project_id = var.project_id
+  project_id = var.create_project ? harness_platform_project.platform[0].id : data.harness_platform_project.platform[0].id
 
   common_tags       = merge(var.default_tags, var.tags)
   common_tags_tuple = [for k, v in local.common_tags : "${k}:${v}"]
 
   environments = var.create_cd_stack ? var.environments : {}
 
-  cloud_connector_ref = var.create_cloud_connector ? (
-    "${local.org_id}.${local.project_id}.${var.cloud_connector_identifier}"
-  ) : var.cloud_connector_ref
+  # Project-scoped connector in infra YAML: use identifier only (same project as infra).
+  # Qualified refs (org.* / account.*) are only needed for cross-scope connectors.
+  cloud_connector_ref = var.create_cloud_connector ? var.cloud_connector_identifier : var.cloud_connector_ref
 
   infrastructure_identifiers = {
     for key, env in local.environments : key => coalesce(
@@ -46,8 +62,8 @@ resource "terraform_data" "platform_validation" {
     }
 
     precondition {
-      condition     = !var.create_service_overrides || var.create_cd_stack
-      error_message = "create_service_overrides requires create_cd_stack to be true."
+      condition     = !var.create_infra_overrides || var.create_cd_stack
+      error_message = "create_infra_overrides requires create_cd_stack to be true."
     }
   }
 }
@@ -128,13 +144,6 @@ resource "harness_platform_service" "platform" {
             primary:
               primaryArtifactRef: <+input>
               sources: []
-          variables:
-            - name: cpu
-              type: String
-              value: "${var.default_cpu}"
-            - name: memory
-              type: String
-              value: "${var.default_memory}"
   EOT
 }
 
@@ -159,11 +168,6 @@ resource "harness_platform_environment" "platform" {
       orgIdentifier: ${local.org_id}
       projectIdentifier: ${local.project_id}
       type: ${each.value.type}
-      variables:
-        - name: env
-          type: String
-          value: ${each.key}
-          description: "Environment name"
   EOT
 }
 
@@ -183,6 +187,8 @@ resource "harness_platform_infrastructure" "platform" {
   deployment_type = var.deployment_type
   tags            = local.common_tags_tuple
 
+  depends_on = [harness_platform_connector_aws.cloud]
+
   yaml = <<-EOT
     infrastructureDefinition:
       name: ${local.infrastructure_names[each.key]}
@@ -201,26 +207,18 @@ resource "harness_platform_infrastructure" "platform" {
 }
 
 # ---------------------------------------------------------------------------
-# Infrastructure-specific service overrides
+# Infrastructure-specific overrides (INFRA_GLOBAL_OVERRIDE)
 # ---------------------------------------------------------------------------
 
-resource "harness_platform_service_overrides_v2" "platform" {
-  for_each = var.create_service_overrides ? local.environments : {}
+resource "harness_platform_service_overrides_v2" "infra" {
+  for_each = var.create_infra_overrides ? local.environments : {}
 
   org_id     = local.org_id
   project_id = local.project_id
   env_id     = harness_platform_environment.platform[each.key].identifier
-  service_id = harness_platform_service.platform[0].identifier
   infra_id   = harness_platform_infrastructure.platform[each.key].identifier
-  type       = "INFRA_SERVICE_OVERRIDE"
+  type       = "INFRA_GLOBAL_OVERRIDE"
 
   yaml = <<-EOT
-    variables:
-      - name: cpu
-        type: String
-        value: "${coalesce(try(each.value.cpu, null), lookup(var.cpu_overrides, each.key, var.default_cpu))}"
-      - name: memory
-        type: String
-        value: "${coalesce(try(each.value.memory, null), lookup(var.memory_overrides, each.key, var.default_memory))}"
-  EOT
+EOT
 }
