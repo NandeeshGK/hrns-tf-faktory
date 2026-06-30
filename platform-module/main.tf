@@ -209,7 +209,7 @@ resource "harness_platform_infrastructure" "platform" {
 # ---------------------------------------------------------------------------
 # Infrastructure-specific overrides (INFRA_GLOBAL_OVERRIDE)
 # ---------------------------------------------------------------------------
-resource "harness_platform_service_overrides_v2" "infratest" {
+resource "harness_platform_service_overrides_v2" "infra" {
   for_each = harness_platform_infrastructure.platform   # keyed dev/stage/prod/testing
 
   org_id     = var.org_id
