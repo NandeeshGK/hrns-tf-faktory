@@ -210,18 +210,19 @@ resource "harness_platform_infrastructure" "platform" {
 # Infrastructure-specific overrides (INFRA_GLOBAL_OVERRIDE)
 # ---------------------------------------------------------------------------
 resource "harness_platform_service_overrides_v2" "infra" {
-  for_each   = var.infra_overrides
+  for_each = harness_platform_infrastructure.platform   # keyed dev/stage/prod/testing
+
   org_id     = var.org_id
   project_id = var.project_id
   env_id     = harness_platform_environment.platform[each.key].id
-  infra_id   = harness_platform_infrastructure.platform[each.key].id
-  service_id = harness_platform_service.platform.id   # required for INFRA_SERVICE_OVERRIDE
-  type       = "INFRA_SERVICE_OVERRIDE"
+  infra_id   = each.value.id
+  service_id = harness_platform_service.platform[0].id   # [0] because the service uses count
+  type       = "INFRA_GLOBAL_OVERRIDE"
 
   spec = <<-EOT
     variables:
-      - name: cpu
+      - name: env
         type: String
-        value: "256"
+        value: ${each.key}
   EOT
 }
