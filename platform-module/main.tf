@@ -214,9 +214,9 @@ resource "harness_platform_service_overrides_v2" "infra" {
 
   org_id     = var.org_id
   project_id = var.project_id
-  env_id     = Dev
-  infra_id   = dev_infra
-  service_id = platform_service   # [0] because the service uses count
+  env_id     = "Dev"
+  infra_id   = "dev_infra"
+  service_id = "platform_service"   # [0] because the service uses count
   type       = "INFRA_GLOBAL_OVERRIDE"
 
   spec = <<-EOT
