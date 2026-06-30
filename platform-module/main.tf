@@ -24,18 +24,7 @@ locals {
 
   environments = var.create_cd_stack ? var.environments : {}
 
-  # Connector references use a scope prefix, NOT an org.project.id path:
-  #   project scope -> no prefix
-  #   org scope     -> "org."
-  #   account scope -> "account."
-  connector_scope_prefix = (
-    local.project_id != null ? "" :
-    local.org_id != null ? "org." : "account."
-  )
-
-  cloud_connector_ref = var.create_cloud_connector ? (
-    "${local.connector_scope_prefix}${var.cloud_connector_identifier}"
-  ) : var.cloud_connector_ref
+  cloud_connector_ref = var.create_cloud_connector ? var.cloud_connector_identifier : var.cloud_connector_ref
 
   infrastructure_identifiers = {
     for key, env in local.environments : key => coalesce(
