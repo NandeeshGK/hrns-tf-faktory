@@ -209,16 +209,19 @@ resource "harness_platform_infrastructure" "platform" {
 # ---------------------------------------------------------------------------
 # Infrastructure-specific overrides (INFRA_GLOBAL_OVERRIDE)
 # ---------------------------------------------------------------------------
-
 resource "harness_platform_service_overrides_v2" "infra" {
-  for_each = var.create_infra_overrides ? local.environments : {}
+  for_each   = var.infra_overrides
+  org_id     = var.org_id
+  project_id = var.project_id
+  env_id     = harness_platform_environment.platform[each.key].id
+  infra_id   = harness_platform_infrastructure.platform[each.key].id
+  service_id = harness_platform_service.platform.id   # required for INFRA_SERVICE_OVERRIDE
+  type       = "INFRA_SERVICE_OVERRIDE"
 
-  org_id     = local.org_id
-  project_id = local.project_id
-  env_id     = harness_platform_environment.platform[each.key].identifier
-  infra_id   = harness_platform_infrastructure.platform[each.key].identifier
-  type       = "INFRA_GLOBAL_OVERRIDE"
-
-  yaml = <<-EOT
-EOT
+  spec = <<-EOT
+    variables:
+      - name: cpu
+        type: String
+        value: "256"
+  EOT
 }
