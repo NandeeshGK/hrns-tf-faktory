@@ -1,9 +1,41 @@
-kubernetes_connector = "account.buildfarm"
+# Copy to terraform.tfvars and fill in. Don't commit the populated file.
+#
+# These are the real values for the CloudEng demo account, captured from the
+# entities already provisioned out-of-band (the `example` module in the IaCM
+# module registry + the `account.NandeeshAccountLevel` GitHub connector
+# pointing at the forked rssnyder/hrns-tf-faktory).
 
-git_connector_ref = "account.github_com"
-git_org           = "rssnyder"
+# --- Harness account ---------------------------------------------------------
+harness_account_id = "Nqvj4rBDR2KoKrjGhauyVg"
+# Provide the PAT via TF_VAR_harness_platform_api_key in the shell. Never commit.
+# harness_platform_api_key = "pat.Nqvj4rBDR2KoKrjGhauyVg.<id>.<secret>"
 
-template_clone_connector_ref = "account.github_com"
-template_clone_repo_name     = "hrns-tf-faktory"
+# --- Platform project --------------------------------------------------------
+platform_org_id       = "default"
+platform_project_name = "CloudEng Platform"
 
-is_personal_account = true
+# --- Execution infra (Harness Cloud by default) ------------------------------
+# Switch to self-hosted by setting `kubernetes_connector = "account.build_farm"`
+# and tuning the other kubernetes_* vars.
+provisioner_type         = "opentofu"
+checkov_fail_on_severity = "high"
+
+# --- IDP repo-bootstrap workflow --------------------------------------------
+# Single account-level GitHub connector covers both creating new app repos and
+# cloning this baseline (the fork of rssnyder/hrns-tf-faktory).
+git_connector_type           = "Github"
+git_connector_ref            = "account.NandeeshAccountLevel"
+git_org                      = "nandeeshgk" # set to the GitHub org/user the fork lives under
+is_personal_account          = true
+
+template_clone_connector_ref = "account.NandeeshAccountLevel"
+template_clone_repo_name     = "hrns-tf-faktory" # the forked repo on the connector above
+template_clone_branch        = "main"
+repo_branch                  = "main"
+
+# --- Tags --------------------------------------------------------------------
+tags = {
+  owner = "cloudeng"
+  layer = "platform"
+  cost  = "shared"
+}
