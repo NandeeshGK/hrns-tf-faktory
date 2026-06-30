@@ -24,8 +24,17 @@ locals {
 
   environments = var.create_cd_stack ? var.environments : {}
 
+  # Connector references use a scope prefix, NOT an org.project.id path:
+  #   project scope -> no prefix
+  #   org scope     -> "org."
+  #   account scope -> "account."
+  connector_scope_prefix = (
+    local.project_id != null ? "" :
+    local.org_id != null ? "org." : "account."
+  )
+
   cloud_connector_ref = var.create_cloud_connector ? (
-    "${local.org_id}.${local.project_id}.${var.cloud_connector_identifier}"
+    "${local.connector_scope_prefix}${var.cloud_connector_identifier}"
   ) : var.cloud_connector_ref
 
   infrastructure_identifiers = {
@@ -64,168 +73,4 @@ resource "terraform_data" "platform_validation" {
 resource "harness_platform_connector_aws" "cloud" {
   count = var.create_cloud_connector ? 1 : 0
 
-  identifier          = var.cloud_connector_identifier
-  name                = var.cloud_connector_name
-  description         = var.cloud_connector_description
-  org_id              = local.org_id
-  project_id          = local.project_id
-  tags                = var.cloud_connector_tags
-  execute_on_delegate = var.execute_on_delegate
-
-  dynamic "fixed_delay_backoff_strategy" {
-    for_each = var.fixed_backoff != null ? [1] : []
-    content {
-      fixed_backoff = var.fixed_backoff
-      retry_count   = var.retry_count
-    }
-  }
-
-  oidc_authentication {
-    iam_role_arn       = var.iam_role_arn
-    region             = var.cloud_region
-    delegate_selectors = var.delegate_selectors
-  }
-}
-
-# ---------------------------------------------------------------------------
-# CD service
-# ---------------------------------------------------------------------------
-
-resource "harness_platform_service" "platform" {
-  count = var.create_cd_stack ? 1 : 0
-
-  identifier  = var.service_identifier
-  name        = var.service_name
-  description = var.service_description
-  org_id      = local.org_id
-  project_id  = local.project_id
-  tags        = local.common_tags_tuple
-
-  yaml = <<-EOT
-    service:
-      name: ${var.service_name}
-      identifier: ${var.service_identifier}
-      orgIdentifier: ${local.org_id}
-      projectIdentifier: ${local.project_id}
-      serviceDefinition:
-        type: ${var.deployment_type}
-        spec:
-          manifests:
-            - manifest:
-                identifier: TaskDefinition
-                type: EcsTaskDefinition
-                spec:
-                  store:
-                    type: Harness
-                    spec:
-                      files:
-                        - ${var.task_definition_manifest_path}
-            - manifest:
-                identifier: ServiceDefinition
-                type: EcsServiceDefinition
-                spec:
-                  store:
-                    type: Harness
-                    spec:
-                      files:
-                        - ${var.service_definition_manifest_path}
-          artifacts:
-            primary:
-              primaryArtifactRef: <+input>
-              sources: []
-          variables:
-            - name: cpu
-              type: String
-              value: "${var.default_cpu}"
-            - name: memory
-              type: String
-              value: "${var.default_memory}"
-  EOT
-}
-
-# ---------------------------------------------------------------------------
-# Environments
-# ---------------------------------------------------------------------------
-
-resource "harness_platform_environment" "platform" {
-  for_each = local.environments
-
-  identifier = each.key
-  name       = each.value.name
-  org_id     = local.org_id
-  project_id = local.project_id
-  type       = each.value.type
-  tags       = local.common_tags_tuple
-
-  yaml = <<-EOT
-    environment:
-      name: ${each.value.name}
-      identifier: ${each.key}
-      orgIdentifier: ${local.org_id}
-      projectIdentifier: ${local.project_id}
-      type: ${each.value.type}
-      variables:
-        - name: env
-          type: String
-          value: ${each.key}
-          description: "Environment name"
-  EOT
-}
-
-# ---------------------------------------------------------------------------
-# Infrastructure definitions
-# ---------------------------------------------------------------------------
-
-resource "harness_platform_infrastructure" "platform" {
-  for_each = local.environments
-
-  identifier      = local.infrastructure_identifiers[each.key]
-  name            = local.infrastructure_names[each.key]
-  org_id          = local.org_id
-  project_id      = local.project_id
-  env_id          = harness_platform_environment.platform[each.key].identifier
-  type            = var.deployment_type
-  deployment_type = var.deployment_type
-  tags            = local.common_tags_tuple
-
-  yaml = <<-EOT
-    infrastructureDefinition:
-      name: ${local.infrastructure_names[each.key]}
-      identifier: ${local.infrastructure_identifiers[each.key]}
-      orgIdentifier: ${local.org_id}
-      projectIdentifier: ${local.project_id}
-      environmentRef: ${each.key}
-      deploymentType: ${var.deployment_type}
-      type: ${var.deployment_type}
-      spec:
-        connectorRef: ${local.cloud_connector_ref}
-        region: ${var.cloud_region}
-        cluster: ${coalesce(try(each.value.cluster, null), lookup(var.cluster_overrides, each.key, var.default_cluster))}
-      allowSimultaneousDeployments: ${var.allow_simultaneous_deployments}
-  EOT
-}
-
-# ---------------------------------------------------------------------------
-# Infrastructure-specific service overrides
-# ---------------------------------------------------------------------------
-
-resource "harness_platform_service_overrides_v2" "platform" {
-  for_each = var.create_service_overrides ? local.environments : {}
-
-  org_id     = local.org_id
-  project_id = local.project_id
-  env_id     = harness_platform_environment.platform[each.key].identifier
-  service_id = harness_platform_service.platform[0].identifier
-  infra_id   = harness_platform_infrastructure.platform[each.key].identifier
-  type       = "INFRA_SERVICE_OVERRIDE"
-
-  yaml = <<-EOT
-    variables:
-      - name: cpu
-        type: String
-        value: "${coalesce(try(each.value.cpu, null), lookup(var.cpu_overrides, each.key, var.default_cpu))}"
-      - name: memory
-        type: String
-        value: "${coalesce(try(each.value.memory, null), lookup(var.memory_overrides, each.key, var.default_memory))}"
-  EOT
-}
+  identifier          = var.cloud_conn
