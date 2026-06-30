@@ -218,4 +218,11 @@ resource "harness_platform_service_overrides_v2" "infra" {
   infra_id   = "dev_infra"
   service_id = "platform_service"   # [0] because the service uses count
   type       = "INFRA_GLOBAL_OVERRIDE"
+
+  yaml = <<-EOT
+    variables:
+      - name: env
+        type: String
+        value: ${each.key}
+  EOT
 }
