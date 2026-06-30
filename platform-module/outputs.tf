@@ -53,10 +53,7 @@ output "infrastructure_identifiers" {
   value       = { for k, infra in harness_platform_infrastructure.platform : k => infra.identifier }
 }
 
-output "infra_override_ids" {
-  description = "INFRA_GLOBAL_OVERRIDE IDs keyed by environment identifier"
-  value       = { for k, override in harness_platform_service_overrides_v2.infra : k => override.id }
-}
+
 
 output "ids" {
   description = "All created resource IDs in one map"
@@ -66,6 +63,5 @@ output "ids" {
     service_id         = var.create_cd_stack ? harness_platform_service.platform[0].id : null
     environments       = { for k, env in harness_platform_environment.platform : k => env.id }
     infrastructures    = { for k, infra in harness_platform_infrastructure.platform : k => infra.id }
-    infra_overrides = { for k, o in harness_platform_service_overrides_v2.infra : k => o.id }
   }
 }
